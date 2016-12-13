@@ -34,51 +34,8 @@
         NSError *loadingError;
         AVKeyValueStatus status = [asset statusOfValueForKey:@"tracks" error:&loadingError];
         switch (status) {
-            case AVKeyValueStatusLoaded: {
-                AVAssetTrack *video = [[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];
-                AVAssetTrack *audio = [[asset tracksWithMediaType:AVMediaTypeAudio] firstObject];
-                
-                if (video) {
-                    NSError *error;
-                    _reader = [AVAssetReader assetReaderWithAsset:asset error:&error];
-                    _reader.timeRange = CMTimeRangeMake(CMTimeMake(0, asset.duration.timescale), asset.duration);
-                    
-                    if (error) {
-                        _asset = nil;
-                        _videoOutput = nil;
-                        _audioOutput = nil;
-                        _reader = nil;
-                        _status = ASVideoPlayerStatusNoItem;
-                        if (completionHandler) {
-                            completionHandler(NO, ASVideoPlayerLoadingErrorUnknown, error);
-                        }
-                    } else {
-                        
-                        // TODO: settings for iOS simulator
-                        NSDictionary *settings = @{
-                                                   (NSString *) kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange),
-                                                   (NSString *) kCVPixelBufferWidthKey : @(video.naturalSize.width),
-                                                   (NSString *) kCVPixelBufferHeightKey : @(video.naturalSize.height)
-                                                   };
-                        
-                        _videoOutput = [AVAssetReaderTrackOutput
-                                        assetReaderTrackOutputWithTrack:video
-                                        outputSettings:settings];
-                        [_reader addOutput:_videoOutput];
-                        
-                        if (audio) {
-                            _audioOutput = [AVAssetReaderTrackOutput
-                                            assetReaderTrackOutputWithTrack:audio
-                                            outputSettings:nil];
-                        }
-                        
-                        _status = ASVideoPlayerStatusReadyToPlay;
-                        if (completionHandler) {
-                            completionHandler(YES, ASVideoPlayerLoadingErrorNone, nil);
-                        }
-                    }
-                }
-            }
+            case AVKeyValueStatusLoaded:
+                [self loadPlayer:completionHandler];
                 break;
             case AVKeyValueStatusFailed: {
                 _asset = nil;
@@ -99,11 +56,59 @@
     }];
 }
 
+- (void)loadPlayer:(nullable AssetLoadingCompletionHandler)completionHandler {
+    AVAssetTrack *video = [[_asset tracksWithMediaType:AVMediaTypeVideo] firstObject];
+    AVAssetTrack *audio = [[_asset tracksWithMediaType:AVMediaTypeAudio] firstObject];
+    
+    if (video) {
+        NSError *error;
+        _reader = [AVAssetReader assetReaderWithAsset:_asset error:&error];
+        _reader.timeRange = CMTimeRangeMake(CMTimeMake(0, _asset.duration.timescale), _asset.duration);
+        
+        if (error) {
+            _asset = nil;
+            _videoOutput = nil;
+            _audioOutput = nil;
+            _reader = nil;
+            _status = ASVideoPlayerStatusNoItem;
+            if (completionHandler) {
+                completionHandler(NO, ASVideoPlayerLoadingErrorUnknown, error);
+            }
+        } else {
+            
+            // TODO: settings for iOS simulator
+            NSDictionary *settings = @{
+                                       (NSString *) kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange),
+                                       (NSString *) kCVPixelBufferWidthKey : @(video.naturalSize.width),
+                                       (NSString *) kCVPixelBufferHeightKey : @(video.naturalSize.height)
+                                       };
+            
+            _videoOutput = [AVAssetReaderTrackOutput
+                            assetReaderTrackOutputWithTrack:video
+                            outputSettings:settings];
+            [_reader addOutput:_videoOutput];
+            
+            if (audio) {
+                _audioOutput = [AVAssetReaderTrackOutput
+                                assetReaderTrackOutputWithTrack:audio
+                                outputSettings:nil];
+            }
+            
+            _status = ASVideoPlayerStatusReadyToPlay;
+            if (completionHandler) {
+                completionHandler(YES, ASVideoPlayerLoadingErrorNone, nil);
+            }
+        }
+    }
+}
+
 - (ASVideoPlayerPlaybackError)play {
     if (_status == ASVideoPlayerStatusNoItem || _status == ASVideoPlayerStatusLoading) {
         return ASVideoPlayerPlaybackErrorNotReady;
     } else if (!_playerLayer) {
         return ASVideoPlayerPlaybackErrorNoLayer;
+    } else if (_status == ASVideoPlayerStatusPaused) {
+        [self loadPlayer:nil];
     }
     
     CMTimebaseRef timebase;

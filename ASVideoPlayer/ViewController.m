@@ -49,11 +49,7 @@
 }
 
 - (IBAction)play:(id)sender {
-    [self.player loadAsset:self.player.asset completionHandler:^(BOOL success, ASVideoPlayerLoadingError error, NSError * _Nullable externalError) {
-        if (success) {
-            [self.player play];
-        }
-    }];
+    [self.player play];
 }
 
 @end
