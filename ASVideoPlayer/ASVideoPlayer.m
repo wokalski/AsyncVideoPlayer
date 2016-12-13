@@ -115,14 +115,16 @@
                                     &timebase);
     _playerLayer.controlTimebase = timebase;
     CMTimebaseGetTime(timebase);
-    CMTimebaseSetTime(_playerLayer.controlTimebase, CMTimeMake(0, 1));
+    CMTimebaseSetTime(_playerLayer.controlTimebase, _currentTime);
     // TODO: Extract rate setting
     CMTimebaseSetRate(_playerLayer.controlTimebase, 1);
     
     _status = ASVideoPlayerStatusPlaying;
     [_reader startReading];
     
-    [_playerLayer requestMediaDataWhenReadyOnQueue:[ASVideoPlayer playerQueue] usingBlock:^{
+    [_playerLayer
+     requestMediaDataWhenReadyOnQueue:[ASVideoPlayer playerQueue]
+     usingBlock:^{
         while (_playerLayer.isReadyForMoreMediaData) {
             if (_reader.status == AVAssetReaderStatusReading) {
                 CMSampleBufferRef buffer = [_videoOutput copyNextSampleBuffer];
@@ -149,6 +151,7 @@
     _status = ASVideoPlayerStatusPaused;
     _currentTime = CMTimebaseGetTime(_playerLayer.controlTimebase);
     [_reader cancelReading];
+    [_playerLayer stopRequestingMediaData];
 }
 
 + (dispatch_queue_t)playerQueue {
