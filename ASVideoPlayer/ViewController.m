@@ -33,7 +33,7 @@
     layer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     
     
-    [self.view.layer addSublayer:layer];
+    [self.view.layer insertSublayer:layer atIndex:0];
     
     self.player = [ASVideoPlayer new];
     self.player.playerLayer = layer;
@@ -44,11 +44,16 @@
     }];
 }
 
-
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+- (IBAction)pause:(id)sender {
+    [self.player pause];
 }
 
+- (IBAction)play:(id)sender {
+    [self.player loadAsset:self.player.asset completionHandler:^(BOOL success, ASVideoPlayerLoadingError error, NSError * _Nullable externalError) {
+        if (success) {
+            ASVideoPlayerPlaybackError error =[self.player play];
+        }
+    }];
+}
 
 @end

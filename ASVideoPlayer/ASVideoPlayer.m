@@ -27,6 +27,7 @@
     
     _asset = asset;
     _status = ASVideoPlayerStatusLoading;
+    _currentTime = CMTimeMake(0, 1);
     
     [asset loadValuesAsynchronouslyForKeys:@[@"tracks"] completionHandler:^{
         
@@ -112,8 +113,8 @@
                                     kCFAllocatorDefault,
                                     clock,
                                     &timebase);
-    
     _playerLayer.controlTimebase = timebase;
+    CMTimebaseGetTime(timebase);
     CMTimebaseSetTime(_playerLayer.controlTimebase, CMTimeMake(0, 1));
     // TODO: Extract rate setting
     CMTimebaseSetRate(_playerLayer.controlTimebase, 1);
@@ -140,11 +141,13 @@
     return ASVideoPlayerPlaybackErrorNone;
 }
 
-- (void)pause:(PlaybackError)completionHandler {
-    if (!_asset) {
+- (void)pause {
+    if (_status != ASVideoPlayerStatusPlaying) {
         return;
     }
     
+    _status = ASVideoPlayerStatusPaused;
+    _currentTime = CMTimebaseGetTime(_playerLayer.controlTimebase);
     [_reader cancelReading];
 }
 
