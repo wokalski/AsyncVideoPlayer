@@ -63,7 +63,7 @@
     if (video) {
         NSError *error;
         _reader = [AVAssetReader assetReaderWithAsset:_asset error:&error];
-        _reader.timeRange = CMTimeRangeMake(CMTimeMake(0, _asset.duration.timescale), _asset.duration);
+        _reader.timeRange = CMTimeRangeMake(_currentTime, _asset.duration);
         
         if (error) {
             _asset = nil;
@@ -119,8 +119,7 @@
                                     clock,
                                     &timebase);
     _playerLayer.controlTimebase = timebase;
-    CMTimebaseGetTime(timebase);
-    CMTimebaseSetTime(_playerLayer.controlTimebase, _currentTime);
+    CMTimebaseSetTime(_playerLayer.controlTimebase, CMTimeMake(0, 1));
     // TODO: Extract rate setting
     CMTimebaseSetRate(_playerLayer.controlTimebase, 1);
     
