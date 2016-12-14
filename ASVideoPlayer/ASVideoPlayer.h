@@ -55,8 +55,6 @@ typedef void (^AssetLoadingCompletionHandler)(BOOL success, ASVideoPlayerLoading
 
 @property (nonatomic, strong, nullable) AVSampleBufferDisplayLayer *playerLayer;
 
-@property (nonatomic, assign) CMTime currentTime;
-
 //@property (nonatomic) float rate;
 
 - (void)loadAsset:(AVAsset *)asset completionHandler:(nullable AssetLoadingCompletionHandler)completionHandler;

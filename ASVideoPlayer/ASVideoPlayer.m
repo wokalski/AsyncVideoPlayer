@@ -27,7 +27,6 @@
     
     _asset = asset;
     _status = ASVideoPlayerStatusLoading;
-    _currentTime = CMTimeMake(0, 1);
     
     [asset loadValuesAsynchronouslyForKeys:@[@"tracks"] completionHandler:^{
         
@@ -63,7 +62,7 @@
     if (video) {
         NSError *error;
         _reader = [AVAssetReader assetReaderWithAsset:_asset error:&error];
-        _reader.timeRange = CMTimeRangeMake(_currentTime, _asset.duration);
+        _reader.timeRange = CMTimeRangeMake(CMTimeMake(0, _asset.duration.timescale), _asset.duration);
         
         if (error) {
             _asset = nil;
@@ -108,7 +107,9 @@
     } else if (!_playerLayer) {
         return ASVideoPlayerPlaybackErrorNoLayer;
     } else if (_status == ASVideoPlayerStatusPaused) {
-        [self loadPlayer:nil];
+        _status = ASVideoPlayerStatusPlaying;
+        CMTimebaseSetRate(_playerLayer.controlTimebase, 1);
+        return ASVideoPlayerPlaybackErrorNone;
     }
     
     CMTimebaseRef timebase;
@@ -122,7 +123,6 @@
     CMTimebaseSetTime(_playerLayer.controlTimebase, CMTimeMake(0, 1));
     // TODO: Extract rate setting
     CMTimebaseSetRate(_playerLayer.controlTimebase, 1);
-    
     _status = ASVideoPlayerStatusPlaying;
     [_reader startReading];
     
@@ -153,9 +153,7 @@
     }
     
     _status = ASVideoPlayerStatusPaused;
-    _currentTime = CMTimebaseGetTime(_playerLayer.controlTimebase);
-    [_reader cancelReading];
-    [_playerLayer stopRequestingMediaData];
+    CMTimebaseSetRate(_playerLayer.controlTimebase, 0);
 }
 
 + (dispatch_queue_t)playerQueue {
@@ -163,6 +161,7 @@
     static dispatch_queue_t queue;
     dispatch_once(&onceToken, ^{
         queue = dispatch_queue_create("com.asvideoplayer.queue", DISPATCH_QUEUE_SERIAL);
+        dispatch_set_target_queue(queue, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0));
     });
     return queue;
 }
